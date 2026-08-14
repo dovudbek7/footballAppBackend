@@ -1,0 +1,47 @@
+from bot.telegram_client import send_message
+
+from .models import NotificationLog
+
+_TEMPLATES = {
+    NotificationLog.NotificationType.OTP_CODE: "Your FutbolGo login code: <b>{code}</b> (valid 5 min).",
+    NotificationLog.NotificationType.TELEGRAM_LINK: "Telegram linked to FutbolGo. Sending your login code now...",
+    NotificationLog.NotificationType.BOOKING_CONFIRMED: (
+        "✅ Booking confirmed: {stadium_name} on {date} at {time}."
+    ),
+    NotificationLog.NotificationType.SPLIT_REQUEST: (
+        "⚽ {organizer_name} invited you to split-pay a seat at {stadium_name} "
+        "on {date} at {time} — your share: ${amount}."
+    ),
+    NotificationLog.NotificationType.MATCH_REMINDER: (
+        "⏰ Reminder: your match at {stadium_name} starts in {minutes} min."
+    ),
+    NotificationLog.NotificationType.WAITLIST_FILLED: (
+        "🏁 Your match at {stadium_name} on {date} is now full — confirmed!"
+    ),
+    NotificationLog.NotificationType.BADGE_UNLOCKED: "🏆 Badge unlocked: {badge_title}!",
+    NotificationLog.NotificationType.TOPUP_APPROVED: "💰 Top-up approved: ${amount} added to your wallet.",
+}
+
+
+def notify(user, notification_type: str, **context) -> NotificationLog:
+    template = _TEMPLATES.get(notification_type, "{message}")
+    text = template.format(**context)
+
+    if not user.telegram_id:
+        return NotificationLog.objects.create(
+            user=user,
+            telegram_id=None,
+            type=notification_type,
+            payload=context,
+            status=NotificationLog.Status.SKIPPED,
+            error_text="User has no linked telegram_id",
+        )
+
+    sent = send_message(user.telegram_id, text)
+    return NotificationLog.objects.create(
+        user=user,
+        telegram_id=user.telegram_id,
+        type=notification_type,
+        payload=context,
+        status=NotificationLog.Status.SENT if sent else NotificationLog.Status.FAILED,
+    )

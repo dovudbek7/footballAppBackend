@@ -1,0 +1,113 @@
+from datetime import date
+
+from django.db.models import Avg, Count, Q
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, status
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.bookings.models import ACTIVE_PAYMENT_STATUSES, Match
+from apps.bookings.serializers import MatchSlotSerializer
+
+from .models import FavoriteStadium, Review, Stadium
+from .serializers import ReviewSerializer, StadiumDetailSerializer, StadiumListSerializer
+
+
+def _annotated_stadiums():
+    return Stadium.objects.filter(is_active=True).annotate(
+        rating=Avg("reviews__rating"), reviews_count=Count("reviews")
+    )
+
+
+class StadiumListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = StadiumListSerializer
+
+    def get_queryset(self):
+        qs = _annotated_stadiums()
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(Q(name__icontains=search) | Q(district__icontains=search) | Q(city__icontains=search))
+        city = self.request.query_params.get("city")
+        if city:
+            qs = qs.filter(city__iexact=city)
+        district = self.request.query_params.get("district")
+        if district:
+            qs = qs.filter(district__iexact=district)
+        return qs
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user.is_authenticated:
+            context["favorite_ids"] = set(
+                FavoriteStadium.objects.filter(user=user).values_list("stadium_id", flat=True)
+            )
+        return context
+
+
+class StadiumDetailView(generics.RetrieveAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = StadiumDetailSerializer
+    queryset = _annotated_stadiums()
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user.is_authenticated:
+            context["favorite_ids"] = set(
+                FavoriteStadium.objects.filter(user=user).values_list("stadium_id", flat=True)
+            )
+        return context
+
+
+class StadiumSlotsView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = MatchSlotSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        stadium = get_object_or_404(Stadium, pk=self.kwargs["pk"])
+        target_date = self.request.query_params.get("date") or date.today().isoformat()
+        return Match.objects.filter(stadium=stadium, date=target_date, status__in=[
+            Match.Status.WAITING, Match.Status.CONFIRMED,
+        ])
+
+
+class FavoriteToggleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        stadium = get_object_or_404(Stadium, pk=pk)
+        FavoriteStadium.objects.get_or_create(user=request.user, stadium=stadium)
+        return Response(status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        FavoriteStadium.objects.filter(user=request.user, stadium_id=pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReviewListCreateView(generics.ListCreateAPIView):
+    serializer_class = ReviewSerializer
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
+    def get_queryset(self):
+        return Review.objects.filter(stadium_id=self.kwargs["pk"]).select_related("author")
+
+    def perform_create(self, serializer):
+        stadium = get_object_or_404(Stadium, pk=self.kwargs["pk"])
+        has_finished_booking = Match.objects.filter(
+            stadium=stadium,
+            status=Match.Status.FINISHED,
+            bookings__user=self.request.user,
+            bookings__payment_status__in=ACTIVE_PAYMENT_STATUSES,
+        ).exists()
+        if not has_finished_booking:
+            raise PermissionDenied("You can only review a stadium after playing a finished match there.")
+        serializer.save(stadium=stadium, author=self.request.user)
