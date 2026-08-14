@@ -40,7 +40,23 @@ def refresh_match_status(match: Match) -> None:
 def join_match(user: User, match: Match, mode: str, friend_ids: list, pay_mode: str) -> list[Booking]:
     match = Match.objects.select_for_update().get(pk=match.pk)
 
-    friends = list(User.objects.filter(id__in=friend_ids)) if mode == "friends" else []
+    if match.status not in (Match.Status.WAITING, Match.Status.CONFIRMED):
+        raise BookingError("This match is no longer open for booking.")
+    starts_at = timezone.make_aware(datetime.combine(match.date, match.start_time))
+    if timezone.now() >= starts_at:
+        raise BookingError("This match has already started.")
+
+    friends = []
+    if mode == "friends":
+        unique_ids = {fid for fid in friend_ids if fid != user.id}
+        friends = list(User.objects.filter(id__in=unique_ids))
+        if len(friends) != len(unique_ids):
+            raise BookingError("Some invited friends could not be found.")
+        already_in = Booking.objects.filter(
+            match=match, user__in=friends, payment_status__in=ACTIVE_PAYMENT_STATUSES
+        ).exists()
+        if already_in:
+            raise BookingError("One of your friends already has a seat in this match.")
     pricing = compute_pricing(mode, pay_mode, len(friends), match.price_per_seat)
 
     if match.taken + pricing["seats"] > match.capacity:
@@ -109,10 +125,18 @@ def join_match(user: User, match: Match, mode: str, friend_ids: list, pay_mode: 
 
 @transaction.atomic
 def accept_split(booking: Booking, user: User) -> Booking:
+    # Re-read under a row lock so concurrent accepts/cancels can't double-debit.
+    booking = Booking.objects.select_for_update().select_related("match", "match__stadium").get(pk=booking.pk)
+
     if booking.user_id != user.id:
         raise BookingError("This booking does not belong to you.")
     if booking.payment_status != Booking.PaymentStatus.PENDING:
         raise BookingError("This booking is not awaiting payment.")
+
+    match = booking.match
+    starts_at = timezone.make_aware(datetime.combine(match.date, match.start_time))
+    if timezone.now() >= starts_at:
+        raise BookingError("This match has already started.")
 
     wallet_services.debit(
         user,
@@ -128,13 +152,21 @@ def accept_split(booking: Booking, user: User) -> Booking:
 
 @transaction.atomic
 def cancel_booking(booking: Booking, user: User) -> Booking:
+    # Re-read under a row lock so a concurrent double-cancel can't double-refund.
+    booking = Booking.objects.select_for_update().select_related("match", "match__stadium").get(pk=booking.pk)
+
     if booking.user_id != user.id:
         raise BookingError("This booking does not belong to you.")
     if booking.payment_status not in ACTIVE_PAYMENT_STATUSES:
         raise BookingError("This booking is already canceled.")
 
     match = booking.match
+    if match.status == Match.Status.FINISHED:
+        raise BookingError("This match is already finished.")
+
     starts_at = timezone.make_aware(datetime.combine(match.date, match.start_time))
+    if timezone.now() >= starts_at:
+        raise BookingError("This match has already started.")
     refundable = timezone.now() < starts_at - CANCELLATION_WINDOW
 
     if refundable and booking.payment_status == Booking.PaymentStatus.PAID:
@@ -150,5 +182,19 @@ def cancel_booking(booking: Booking, user: User) -> Booking:
 
     booking.canceled_at = timezone.now()
     booking.save(update_fields=["payment_status", "canceled_at"])
+
+    # The organizer's cancel also releases seats of invited friends who never paid
+    # their split share — those seats were only held on the organizer's behalf.
+    if booking.is_organizer:
+        pending_invitees = Booking.objects.select_for_update().filter(
+            match=match,
+            invited_by=user,
+            payment_status=Booking.PaymentStatus.PENDING,
+        ).exclude(user=user)
+        for invitee in pending_invitees:
+            invitee.payment_status = Booking.PaymentStatus.CANCELED
+            invitee.canceled_at = timezone.now()
+            invitee.save(update_fields=["payment_status", "canceled_at"])
+
     refresh_match_status(match)
     return booking

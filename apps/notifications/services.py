@@ -18,6 +18,9 @@ _TEMPLATES = {
     NotificationLog.NotificationType.WAITLIST_FILLED: (
         "🏁 Your match at {stadium_name} on {date} is now full — confirmed!"
     ),
+    NotificationLog.NotificationType.SPLIT_EXPIRED: (
+        "⌛ The split-pay seat you reserved for {friend_name} at {stadium_name} expired unpaid and was released."
+    ),
     NotificationLog.NotificationType.BADGE_UNLOCKED: "🏆 Badge unlocked: {badge_title}!",
     NotificationLog.NotificationType.TOPUP_APPROVED: "💰 Top-up approved: ${amount} added to your wallet.",
 }

@@ -15,7 +15,6 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 REMINDER_LEAD_TIME = timedelta(minutes=60)
-REMINDER_WINDOW = timedelta(minutes=10)
 
 
 def _send_match_reminders() -> None:
@@ -24,13 +23,24 @@ def _send_match_reminders() -> None:
     from apps.notifications.services import notify
 
     now = timezone.now()
-    window_start = now + REMINDER_LEAD_TIME
-    window_end = window_start + REMINDER_WINDOW
+    today = now.date()
 
-    matches = Match.objects.filter(status=Match.Status.CONFIRMED, reminder_sent=False).select_related("stadium")
+    # Bounded queryset: only today/tomorrow can be within the 60-min lead window,
+    # so stale unreminded matches never accumulate in the scan.
+    matches = Match.objects.filter(
+        status=Match.Status.CONFIRMED,
+        reminder_sent=False,
+        date__gte=today,
+        date__lte=today + timedelta(days=1),
+    ).select_related("stadium")
     for match in matches:
         starts_at = timezone.make_aware(datetime.combine(match.date, match.start_time))
-        if not (window_start <= starts_at <= window_end):
+        if starts_at <= now:
+            # Kickoff already passed — mark handled so it drops out of the scan.
+            match.reminder_sent = True
+            match.save(update_fields=["reminder_sent"])
+            continue
+        if starts_at - now > REMINDER_LEAD_TIME:
             continue
         for booking in match.bookings.filter(payment_status__in=ACTIVE_PAYMENT_STATUSES).select_related("user"):
             notify(
@@ -64,9 +74,9 @@ def _expire_pending_split_bookings() -> None:
         if booking.invited_by_id and booking.invited_by_id != booking.user_id:
             notify(
                 booking.invited_by,
-                NotificationLog.NotificationType.WAITLIST_FILLED,
+                NotificationLog.NotificationType.SPLIT_EXPIRED,
+                friend_name=booking.user.full_name or booking.user.phone or "your friend",
                 stadium_name=booking.match.stadium.name,
-                date=f"seat for {booking.user.full_name or booking.user.phone} expired unpaid",
             )
 
 

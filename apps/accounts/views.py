@@ -126,9 +126,11 @@ class FriendAddView(APIView):
         serializer = FriendAddSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        friend = User.objects.filter(phone=data.get("phone")).first() or User.objects.filter(
-            telegram_username=data.get("telegram_username")
-        ).first()
+        friend = None
+        if data.get("phone"):
+            friend = User.objects.filter(phone=data["phone"]).first()
+        if not friend and data.get("telegram_username"):
+            friend = User.objects.filter(telegram_username=data["telegram_username"].lstrip("@")).first()
         if not friend:
             return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
         if friend.id == request.user.id:

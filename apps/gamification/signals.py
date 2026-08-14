@@ -8,8 +8,11 @@ from . import services
 
 
 @receiver(post_save, sender=MatchResult)
-def score_match_on_result(sender, instance, **kwargs):
-    services.apply_match_result_scoring(instance.match)
+def score_match_on_result(sender, instance, created, **kwargs):
+    # Only score the first submission — editing/resubmitting a result must not
+    # award leaderboard points a second time.
+    if created:
+        services.apply_match_result_scoring(instance.match)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

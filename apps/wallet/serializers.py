@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from .models import ExchangeRate, PaymentMethod, TopUpRequest, Transaction, Wallet
@@ -33,6 +35,7 @@ class TopUpRequestSerializer(serializers.ModelSerializer):
     payment_method_key = serializers.SlugRelatedField(
         source="payment_method", slug_field="key", queryset=PaymentMethod.objects.filter(is_active=True)
     )
+    amount = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=Decimal("1"))
 
     class Meta:
         model = TopUpRequest

@@ -42,6 +42,12 @@ class ExperienceLevel(models.TextChoices):
     PRO = "PRO", "PRO"
 
 
+class Language(models.TextChoices):
+    UZBEK = "uz", "O'zbekcha"
+    RUSSIAN = "ru", "Русский"
+    ENGLISH = "en", "English"
+
+
 class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -57,6 +63,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     experience_level = models.CharField(
         max_length=16, choices=ExperienceLevel.choices, default=ExperienceLevel.AMATEUR
     )
+    language = models.CharField(max_length=8, choices=Language.choices, default=Language.UZBEK)
 
     is_onboarded = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -121,7 +128,7 @@ class OTPCode(TimeStampedModel):
             return False
         self.attempts += 1
         self.save(update_fields=["attempts"])
-        if self.code != code:
+        if not secrets.compare_digest(self.code, code):
             return False
         self.consumed_at = timezone.now()
         self.save(update_fields=["consumed_at"])

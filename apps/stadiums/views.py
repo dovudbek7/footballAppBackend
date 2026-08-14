@@ -3,7 +3,7 @@ from datetime import date
 from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -70,10 +70,17 @@ class StadiumSlotsView(generics.ListAPIView):
 
     def get_queryset(self):
         stadium = get_object_or_404(Stadium, pk=self.kwargs["pk"])
-        target_date = self.request.query_params.get("date") or date.today().isoformat()
+        raw_date = self.request.query_params.get("date")
+        if raw_date:
+            try:
+                target_date = date.fromisoformat(raw_date)
+            except ValueError:
+                raise ValidationError({"date": "Expected YYYY-MM-DD."})
+        else:
+            target_date = date.today()
         return Match.objects.filter(stadium=stadium, date=target_date, status__in=[
             Match.Status.WAITING, Match.Status.CONFIRMED,
-        ])
+        ]).prefetch_related("bookings")
 
 
 class FavoriteToggleView(APIView):

@@ -16,6 +16,8 @@ def get_or_create_wallet(user) -> Wallet:
 
 @transaction.atomic
 def debit(user, amount: Decimal, title: str, subtitle: str = "", booking=None) -> Transaction:
+    if amount < 0:
+        raise ValueError("Debit amount cannot be negative.")
     wallet = Wallet.objects.select_for_update().get(user=user)
     if wallet.balance_usd < amount:
         raise InsufficientFunds(f"Balance ${wallet.balance_usd} is less than ${amount}.")
@@ -34,6 +36,8 @@ def debit(user, amount: Decimal, title: str, subtitle: str = "", booking=None) -
 
 @transaction.atomic
 def credit(user, amount: Decimal, title: str, subtitle: str = "", topup_request=None) -> Transaction:
+    if amount < 0:
+        raise ValueError("Credit amount cannot be negative.")
     wallet = Wallet.objects.select_for_update().get(user=user)
     wallet.balance_usd += amount
     wallet.save(update_fields=["balance_usd"])

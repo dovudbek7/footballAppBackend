@@ -9,7 +9,7 @@ from django.conf import settings
 from apps.notifications.models import NotificationLog
 from apps.notifications.services import notify
 
-from .models import OTPCode, TelegramLinkToken, User
+from .models import Language, OTPCode, TelegramLinkToken, User
 
 INITDATA_MAX_AGE_SECONDS = 24 * 60 * 60
 
@@ -91,6 +91,15 @@ def _validate_init_data(init_data: str) -> dict:
     return pairs
 
 
+def _initial_language(language_code: str | None) -> str:
+    """Map Telegram's language_code to a supported app language."""
+    if language_code:
+        code = language_code.split("-")[0].lower()
+        if code in Language.values:
+            return code
+    return Language.UZBEK
+
+
 def authenticate_telegram_webapp(init_data: str) -> tuple[User, bool]:
     pairs = _validate_init_data(init_data)
     tg_user = json.loads(pairs["user"])
@@ -102,9 +111,17 @@ def authenticate_telegram_webapp(init_data: str) -> tuple[User, bool]:
             "telegram_username": tg_user.get("username", ""),
             "full_name": " ".join(filter(None, [tg_user.get("first_name"), tg_user.get("last_name")])),
             "avatar_url": tg_user.get("photo_url", ""),
+            "language": _initial_language(tg_user.get("language_code")),
         },
     )
-    if not created and tg_user.get("username") and user.telegram_username != tg_user["username"]:
-        user.telegram_username = tg_user["username"]
-        user.save(update_fields=["telegram_username"])
+    if not created:
+        update_fields = []
+        if tg_user.get("username") and user.telegram_username != tg_user["username"]:
+            user.telegram_username = tg_user["username"]
+            update_fields.append("telegram_username")
+        if tg_user.get("photo_url") and user.avatar_url != tg_user["photo_url"]:
+            user.avatar_url = tg_user["photo_url"]
+            update_fields.append("avatar_url")
+        if update_fields:
+            user.save(update_fields=update_fields)
     return user, created

@@ -14,8 +14,12 @@ import logging
 
 from aiogram import Bot, Dispatcher, Router
 from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from django.utils import timezone
+
+from . import onboarding
+from .texts import t
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -65,25 +69,42 @@ async def start_with_token(message: Message, command: CommandObject):
 
 
 @router.message(CommandStart())
-async def start_plain(message: Message):
+async def start_plain(message: Message, state: FSMContext):
+    from apps.accounts.models import User
+
+    user = await User.objects.filter(telegram_id=message.from_user.id).afirst()
+    if user and user.is_onboarded:
+        await message.answer(
+            t(user.language, "welcome_back", name=user.full_name or message.from_user.first_name),
+            reply_markup=onboarding.open_app_keyboard(user.language),
+        )
+        return
+
+    await onboarding.begin_onboarding(message, state)
+
+
+@router.message(Command("language"))
+async def language_command(message: Message):
+    from apps.accounts.models import User
+
+    user = await User.objects.filter(telegram_id=message.from_user.id).afirst()
+    lang = user.language if user else "uz"
     await message.answer(
-        "Welcome to FutbolGo ⚽️\n"
-        "Open the Mini App from the menu button to book a pitch, or log in on the website — "
-        "you'll get a login code here."
+        t(lang, "choose_language"),
+        reply_markup=onboarding._language_keyboard(prefix="setlang"),
     )
 
 
 @router.message(Command("help"))
 async def help_command(message: Message):
-    await message.answer("FutbolGo bot: book pitches, find matches, get notified. Open the Mini App to get started.")
+    from apps.accounts.models import User
+
+    user = await User.objects.filter(telegram_id=message.from_user.id).afirst()
+    await message.answer(t(user.language if user else "uz", "help"))
 
 
 def build_dispatcher() -> Dispatcher:
     dp = Dispatcher()
     dp.include_router(router)
+    dp.include_router(onboarding.router)
     return dp
-
-
-async def run_polling(bot: Bot) -> None:
-    dp = build_dispatcher()
-    await dp.start_polling(bot)

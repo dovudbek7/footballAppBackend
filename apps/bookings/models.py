@@ -117,3 +117,17 @@ class MatchResult(TimeStampedModel):
     match = models.OneToOneField(Match, related_name="result", on_delete=models.CASCADE)
     score = models.CharField(max_length=16, blank=True)
     entered_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+
+
+class MatchChatMessage(TimeStampedModel):
+    """A message in a match's group chat. Only players with an active booking can read/post."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    match = models.ForeignKey(Match, related_name="chat_messages", on_delete=models.CASCADE)
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="chat_messages", on_delete=models.CASCADE)
+    text = models.TextField(max_length=2000)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [models.Index(fields=["match", "created_at"], name="chat_match_created_idx")]

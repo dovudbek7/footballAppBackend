@@ -17,6 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
             "city",
             "position",
             "experience_level",
+            "language",
             "is_onboarded",
         )
         read_only_fields = ("id", "phone", "telegram_id", "telegram_username", "is_onboarded")
@@ -27,7 +28,7 @@ class UserOnboardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("full_name", "avatar_url", "region", "city", "position", "experience_level")
+        fields = ("full_name", "avatar_url", "region", "city", "position", "experience_level", "language")
         extra_kwargs = {"full_name": {"required": False}}
 
     def update(self, instance, validated_data):

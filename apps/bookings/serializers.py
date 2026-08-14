@@ -1,6 +1,10 @@
+from datetime import datetime
+
+from django.utils import timezone
 from rest_framework import serializers
 
-from .models import ACTIVE_PAYMENT_STATUSES, Booking, Match, MatchResult
+from .models import ACTIVE_PAYMENT_STATUSES, Booking, Match, MatchChatMessage, MatchResult
+from .services import CANCELLATION_WINDOW
 
 
 class MatchSlotSerializer(serializers.ModelSerializer):
@@ -27,6 +31,10 @@ class ScheduledMatchSerializer(serializers.ModelSerializer):
     score = serializers.SerializerMethodField()
     my_result = serializers.SerializerMethodField()
     my_motm = serializers.SerializerMethodField()
+    starts_at = serializers.SerializerMethodField()
+    my_booking_id = serializers.SerializerMethodField()
+    my_payment_status = serializers.SerializerMethodField()
+    refundable = serializers.SerializerMethodField()
 
     class Meta:
         model = Match
@@ -38,11 +46,15 @@ class ScheduledMatchSerializer(serializers.ModelSerializer):
             "format",
             "date",
             "time",
+            "starts_at",
             "status",
             "missing_players",
             "score",
             "my_result",
             "my_motm",
+            "my_booking_id",
+            "my_payment_status",
+            "refundable",
         )
 
     def get_missing_players(self, obj):
@@ -68,6 +80,27 @@ class ScheduledMatchSerializer(serializers.ModelSerializer):
     def get_my_motm(self, obj):
         booking = self._my_booking(obj)
         return booking.is_motm if booking else False
+
+    def get_starts_at(self, obj):
+        return timezone.make_aware(datetime.combine(obj.date, obj.start_time)).isoformat()
+
+    def get_my_booking_id(self, obj):
+        booking = self._my_booking(obj)
+        return str(booking.id) if booking else None
+
+    def get_my_payment_status(self, obj):
+        booking = self._my_booking(obj)
+        return booking.payment_status if booking else None
+
+    def get_refundable(self, obj):
+        """True when canceling now would refund the seat (paid + more than 2h before kickoff)."""
+        booking = self._my_booking(obj)
+        if not booking or booking.payment_status != Booking.PaymentStatus.PAID:
+            return False
+        if obj.status not in (Match.Status.WAITING, Match.Status.CONFIRMED):
+            return False
+        starts_at = timezone.make_aware(datetime.combine(obj.date, obj.start_time))
+        return timezone.now() < starts_at - CANCELLATION_WINDOW
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -112,3 +145,27 @@ class MatchResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = MatchResult
         fields = ("score", "entered_by", "created_at")
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender = serializers.SerializerMethodField()
+    is_mine = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MatchChatMessage
+        fields = ("id", "sender", "text", "created_at", "is_mine")
+
+    def get_sender(self, obj):
+        return {
+            "id": str(obj.sender_id),
+            "name": obj.sender.full_name or obj.sender.telegram_username or "Player",
+            "avatar": obj.sender.avatar_url,
+        }
+
+    def get_is_mine(self, obj):
+        request = self.context.get("request")
+        return bool(request and obj.sender_id == request.user.id)
+
+
+class ChatMessageInputSerializer(serializers.Serializer):
+    text = serializers.CharField(max_length=2000, trim_whitespace=True)

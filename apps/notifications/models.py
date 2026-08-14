@@ -13,6 +13,7 @@ class NotificationLog(TimeStampedModel):
         SPLIT_REQUEST = "split_request", "Split payment request"
         MATCH_REMINDER = "match_reminder", "Match reminder"
         WAITLIST_FILLED = "waitlist_filled", "Waitlist filled"
+        SPLIT_EXPIRED = "split_expired", "Split payment expired"
         BADGE_UNLOCKED = "badge_unlocked", "Badge unlocked"
         TOPUP_APPROVED = "topup_approved", "Top-up approved"
 
