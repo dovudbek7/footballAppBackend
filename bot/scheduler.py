@@ -80,9 +80,22 @@ def _expire_pending_split_bookings() -> None:
             )
 
 
+def _generate_upcoming_matches() -> None:
+    """Keep the next 14 days of matches materialized from slot templates."""
+    from django.core.management import call_command
+
+    try:
+        call_command("generate_matches", days=14)
+    except Exception:
+        logger.exception("generate_matches failed")
+
+
 async def run_periodic_jobs() -> None:
     scheduler = AsyncIOScheduler()
     scheduler.add_job(sync_to_async(_send_match_reminders), "interval", minutes=5)
     scheduler.add_job(sync_to_async(_expire_pending_split_bookings), "interval", minutes=5)
+    scheduler.add_job(sync_to_async(_generate_upcoming_matches), "interval", hours=12)
+    # Startupda ham bir marta — deploydan keyin darhol slotlar paydo bo'lsin
+    await sync_to_async(_generate_upcoming_matches)()
     scheduler.start()
-    logger.info("Scheduler started: match reminders + split-pay expiry every 5 min.")
+    logger.info("Scheduler started: reminders + split expiry (5 min), match generation (12h).")
