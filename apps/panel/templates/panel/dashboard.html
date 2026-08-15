@@ -1,0 +1,115 @@
+{% extends "panel/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block header %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-xs text-slate-500">Jami foydalanuvchilar</p>
+    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ stats.total_users }}</p>
+    <p class="text-xs text-brand-600 mt-1">+{{ stats.new_today }} bugun · +{{ stats.new_week }} 7 kunda</p>
+  </div>
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-xs text-slate-500">Hamyonlar balansi (jami)</p>
+    <p class="text-2xl font-semibold text-slate-900 mt-1">${{ stats.wallet_total|floatformat:2 }}</p>
+    <p class="text-xs text-slate-400 mt-1">Barcha userlar</p>
+  </div>
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-xs text-slate-500">To'lov (paid) tushum</p>
+    <p class="text-2xl font-semibold text-slate-900 mt-1">${{ stats.paid_revenue|floatformat:2 }}</p>
+    <p class="text-xs text-slate-400 mt-1">{{ stats.total_bookings }} ta booking</p>
+  </div>
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-xs text-slate-500">Kutilayotgan top-uplar</p>
+    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ stats.topup_pending }}</p>
+    <p class="text-xs text-slate-400 mt-1">$ {{ stats.topup_month_total|floatformat:2 }} · 30 kunda tasdiqlangan</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-xs text-slate-500">Faol stadionlar</p>
+    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ stats.total_stadiums }}</p>
+  </div>
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-xs text-slate-500">O'yinlar</p>
+    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ stats.total_matches }}</p>
+    <p class="text-xs text-slate-400 mt-1">
+      {{ stats.matches_waiting }} kutmoqda · {{ stats.matches_confirmed }} tasdiqlangan · {{ stats.matches_finished }} tugagan
+    </p>
+  </div>
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-xs text-slate-500">Yangi ro'yxatdan o'tish (30 kun)</p>
+    <p class="text-2xl font-semibold text-slate-900 mt-1">{{ stats.new_month }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-sm font-medium text-slate-900 mb-4">Ro'yxatdan o'tish — so'nggi 14 kun</p>
+    <div class="flex items-end gap-2 h-40">
+      {% for point in signup_series %}
+      <div class="flex-1 flex flex-col items-center justify-end gap-1 group">
+        <span class="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100">{{ point.count }}</span>
+        <div class="w-full bg-brand-500 rounded-t" style="height: {{ point.pct }}%; min-height:2px;"></div>
+        <span class="text-[10px] text-slate-400">{{ point.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <p class="text-sm font-medium text-slate-900 mb-4">Top stadionlar (o'yin soni)</p>
+    <div class="space-y-3">
+      {% for s in top_stadiums %}
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-slate-700 truncate">{{ s.name }}</span>
+        <span class="text-slate-400">{{ s.match_count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-slate-400">Ma'lumot yo'q</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-sm font-medium text-slate-900">Kutilayotgan top-up so'rovlari</p>
+      <a href="/admin/wallet/topuprequest/" class="text-xs text-brand-600 hover:underline">Admin'da ko'rish</a>
+    </div>
+    <div class="divide-y divide-slate-100">
+      {% for t in pending_topups %}
+      <div class="py-2 flex items-center justify-between text-sm">
+        <div>
+          <p class="text-slate-800">{{ t.user.full_name|default:t.user.phone }}</p>
+          <p class="text-xs text-slate-400">{{ t.payment_method.name }} · {{ t.created_at|date:"d.m H:i" }}</p>
+        </div>
+        <span class="font-medium text-slate-900">${{ t.amount }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm text-slate-400 py-2">Hozircha yo'q</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-sm font-medium text-slate-900">Yangi foydalanuvchilar</p>
+      <a href="{% url 'panel:users' %}" class="text-xs text-brand-600 hover:underline">Barchasi</a>
+    </div>
+    <div class="divide-y divide-slate-100">
+      {% for u in recent_users %}
+      <a href="{% url 'panel:user_detail' u.pk %}" class="py-2 flex items-center justify-between text-sm hover:bg-slate-50 -mx-1 px-1 rounded">
+        <div>
+          <p class="text-slate-800">{{ u.full_name|default:"—" }}</p>
+          <p class="text-xs text-slate-400">{{ u.phone|default:u.telegram_id }}</p>
+        </div>
+        <span class="text-xs text-slate-400">{{ u.created_at|date:"d.m.Y" }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "panel/base.html" %}
+{% block title %}Adminlar{% endblock %}
+{% block header %}Adminlar{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-1">
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <p class="text-sm font-medium text-slate-900 mb-4">Yangi admin qo'shish</p>
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Ism familya</label>
+          <input type="text" name="full_name" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Telefon raqam</label>
+          <input type="text" name="phone" placeholder="+998901234567" required
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Parol</label>
+          <input type="password" name="password" required minlength="6"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <button type="submit" class="w-full rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm py-2.5 font-medium">
+          Admin qo'shish
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+          <tr>
+            <th class="text-left px-5 py-3 font-medium">Ism</th>
+            <th class="text-left px-5 py-3 font-medium">Telefon</th>
+            <th class="text-left px-5 py-3 font-medium">Rol</th>
+            <th class="text-left px-5 py-3 font-medium">Qo'shilgan</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for a in admins %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-5 py-3 text-slate-800">{{ a.full_name|default:"—" }}</td>
+            <td class="px-5 py-3 text-slate-600">{{ a.phone }}</td>
+            <td class="px-5 py-3">
+              {% if a.is_superuser %}
+              <span class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 text-xs px-2 py-0.5">Super Admin</span>
+              {% else %}
+              <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-600 text-xs px-2 py-0.5">Admin</span>
+              {% endif %}
+            </td>
+            <td class="px-5 py-3 text-slate-400">{{ a.created_at|date:"d.m.Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

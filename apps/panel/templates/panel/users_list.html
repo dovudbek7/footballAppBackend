@@ -1,0 +1,62 @@
+{% extends "panel/base.html" %}
+{% block title %}Foydalanuvchilar{% endblock %}
+{% block header %}Foydalanuvchilar{% endblock %}
+
+{% block content %}
+<form method="get" class="mb-5">
+  <input type="text" name="q" value="{{ q }}" placeholder="Ism, telefon yoki telegram username bo'yicha qidirish..."
+    class="w-full max-w-md rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+</form>
+
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+      <tr>
+        <th class="text-left px-5 py-3 font-medium">Ism</th>
+        <th class="text-left px-5 py-3 font-medium">Telefon</th>
+        <th class="text-left px-5 py-3 font-medium">Shahar</th>
+        <th class="text-left px-5 py-3 font-medium">Daraja</th>
+        <th class="text-left px-5 py-3 font-medium">Balans</th>
+        <th class="text-left px-5 py-3 font-medium">Ro'yxatdan o'tgan</th>
+        <th class="text-left px-5 py-3 font-medium">Holat</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for u in page_obj %}
+      <tr class="hover:bg-slate-50 cursor-pointer" onclick="window.location='{% url 'panel:user_detail' u.pk %}'">
+        <td class="px-5 py-3 text-slate-800">{{ u.full_name|default:"—" }}</td>
+        <td class="px-5 py-3 text-slate-600">{{ u.phone|default:"—" }}</td>
+        <td class="px-5 py-3 text-slate-600">{{ u.city|default:"—" }}</td>
+        <td class="px-5 py-3 text-slate-600">{{ u.experience_level }}</td>
+        <td class="px-5 py-3 text-slate-600">${{ u.wallet.balance_usd|default:"0.00" }}</td>
+        <td class="px-5 py-3 text-slate-400">{{ u.created_at|date:"d.m.Y" }}</td>
+        <td class="px-5 py-3">
+          {% if u.is_active %}
+          <span class="inline-flex items-center rounded-full bg-brand-50 text-brand-700 text-xs px-2 py-0.5">Faol</span>
+          {% else %}
+          <span class="inline-flex items-center rounded-full bg-red-50 text-red-600 text-xs px-2 py-0.5">Bloklangan</span>
+          {% endif %}
+          {% if u.is_staff %}
+          <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-600 text-xs px-2 py-0.5 ml-1">Admin</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="px-5 py-8 text-center text-slate-400">Hech narsa topilmadi</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="flex items-center justify-center gap-2 mt-5 text-sm">
+  {% if page_obj.has_previous %}
+  <a href="?q={{ q }}&page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-white">Oldingi</a>
+  {% endif %}
+  <span class="px-3 py-1.5 text-slate-500">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+  <a href="?q={{ q }}&page={{ page_obj.next_page_number }}" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-white">Keyingi</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

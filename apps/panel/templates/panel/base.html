@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Panel{% endblock %} · FutbolGo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: { 50:'#eefdf3',100:'#d6fae1',400:'#3ddc84',500:'#22c55e',600:'#16a34a',700:'#15803d' },
+          ink: { 900:'#0b1220',800:'#111a2b',700:'#182338',600:'#233046' }
+        }
+      }
+    }
+  }
+</script>
+<style>[x-cloak]{display:none}</style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased">
+<div class="flex min-h-screen">
+
+  <aside class="w-64 shrink-0 bg-ink-900 text-slate-300 flex flex-col">
+    <div class="px-6 py-5 border-b border-white/10">
+      <div class="flex items-center gap-2">
+        <div class="h-8 w-8 rounded-lg bg-brand-500 flex items-center justify-center font-bold text-white">F</div>
+        <div>
+          <p class="text-white font-semibold leading-none">FutbolGo</p>
+          <p class="text-xs text-slate-500">Admin Panel</p>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
+      <a href="{% url 'panel:dashboard' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if request.resolver_match.url_name == 'dashboard' %}bg-brand-600/20 text-white{% else %}hover:bg-white/5 hover:text-white{% endif %}">
+        <span>📊</span> Dashboard
+      </a>
+      <a href="{% url 'panel:users' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if request.resolver_match.url_name == 'users' or request.resolver_match.url_name == 'user_detail' %}bg-brand-600/20 text-white{% else %}hover:bg-white/5 hover:text-white{% endif %}">
+        <span>👤</span> Foydalanuvchilar
+      </a>
+      {% if request.user.is_superuser %}
+      <a href="{% url 'panel:admins' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if request.resolver_match.url_name == 'admins' %}bg-brand-600/20 text-white{% else %}hover:bg-white/5 hover:text-white{% endif %}">
+        <span>🛡️</span> Adminlar
+      </a>
+      {% endif %}
+      <a href="/admin/" class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-white/5 hover:text-white">
+        <span>⚙️</span> Django Admin
+      </a>
+    </nav>
+    <div class="px-3 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3 px-3 py-2">
+        <div class="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-white text-sm font-semibold">
+          {{ request.user.full_name|default:request.user.phone|slice:":1"|upper }}
+        </div>
+        <div class="min-w-0">
+          <p class="text-white text-sm truncate">{{ request.user.full_name|default:request.user.phone }}</p>
+          <p class="text-xs text-slate-500">{% if request.user.is_superuser %}Super Admin{% else %}Admin{% endif %}</p>
+        </div>
+      </div>
+      <a href="{% url 'panel:logout' %}" class="mt-2 block text-center rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-white">Chiqish</a>
+    </div>
+  </aside>
+
+  <main class="flex-1 flex flex-col min-w-0">
+    <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
+      <h1 class="text-lg font-semibold text-slate-900">{% block header %}{% endblock %}</h1>
+      <div class="text-sm text-slate-400">{% now "d.m.Y H:i" %}</div>
+    </header>
+
+    <div class="flex-1 px-8 py-6">
+      {% if messages %}
+      <div class="mb-5 space-y-2">
+        {% for message in messages %}
+        <div class="rounded-lg px-4 py-3 text-sm {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-brand-50 text-brand-700 border border-brand-100{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+</body>
+</html>

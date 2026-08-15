@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_spectacular",
     "apps.core",
+    "apps.panel",
     "apps.accounts",
     "apps.stadiums",
     "apps.bookings",
