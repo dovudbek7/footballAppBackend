@@ -1,9 +1,13 @@
 from rest_framework import serializers
 
+from apps.wallet.services import get_or_create_wallet
+
 from .models import ExperienceLevel, Friendship, User
 
 
 class UserSerializer(serializers.ModelSerializer):
+    friend_code = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = (
@@ -18,9 +22,14 @@ class UserSerializer(serializers.ModelSerializer):
             "position",
             "experience_level",
             "language",
+            "role",
+            "friend_code",
             "is_onboarded",
         )
-        read_only_fields = ("id", "phone", "telegram_id", "telegram_username", "is_onboarded")
+        read_only_fields = ("id", "phone", "telegram_id", "telegram_username", "role", "is_onboarded")
+
+    def get_friend_code(self, obj):
+        return get_or_create_wallet(obj).paynet_id
 
 
 class UserOnboardSerializer(serializers.ModelSerializer):
@@ -64,11 +73,26 @@ class FriendSerializer(serializers.Serializer):
     avatar = serializers.CharField(source="avatar_url")
 
 
+class FriendRequestSerializer(serializers.Serializer):
+    """Incoming pending friend request."""
+
+    id = serializers.IntegerField()
+    user_id = serializers.UUIDField(source="user.id")
+    name = serializers.CharField(source="user.full_name")
+    avatar = serializers.CharField(source="user.avatar_url")
+    created_at = serializers.DateTimeField()
+
+
 class FriendAddSerializer(serializers.Serializer):
+    """Accepts a user_id (from a search result), a phone number, @telegram_username,
+    or a friend_code (wallet Paynet ID)."""
+
+    user_id = serializers.UUIDField(required=False)
     phone = serializers.CharField(required=False)
     telegram_username = serializers.CharField(required=False)
+    code = serializers.CharField(required=False)
 
     def validate(self, attrs):
-        if not attrs.get("phone") and not attrs.get("telegram_username"):
-            raise serializers.ValidationError("Provide a phone or telegram_username.")
+        if not any(attrs.get(f) for f in ("user_id", "phone", "telegram_username", "code")):
+            raise serializers.ValidationError("Provide a user_id, phone, telegram_username, or code.")
         return attrs

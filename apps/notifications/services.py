@@ -23,6 +23,15 @@ _TEMPLATES = {
     ),
     NotificationLog.NotificationType.BADGE_UNLOCKED: "🏆 Badge unlocked: {badge_title}!",
     NotificationLog.NotificationType.TOPUP_APPROVED: "💰 Top-up approved: ${amount} added to your wallet.",
+    NotificationLog.NotificationType.FRIEND_REQUEST: (
+        "🤝 {requester_name} sent you a friend request."
+    ),
+    NotificationLog.NotificationType.FRIEND_ACCEPTED: (
+        "🤝 {friend_name} accepted your friend request."
+    ),
+    NotificationLog.NotificationType.MATCH_INVITE: (
+        "⚽ {organizer_name} invited you to a match at {stadium_name} on {date} at {time}."
+    ),
 }
 
 
@@ -35,6 +44,7 @@ def notify(user, notification_type: str, **context) -> NotificationLog:
             user=user,
             telegram_id=None,
             type=notification_type,
+            text=text,
             payload=context,
             status=NotificationLog.Status.SKIPPED,
             error_text="User has no linked telegram_id",
@@ -45,6 +55,7 @@ def notify(user, notification_type: str, **context) -> NotificationLog:
         user=user,
         telegram_id=user.telegram_id,
         type=notification_type,
+        text=text,
         payload=context,
         status=NotificationLog.Status.SENT if sent else NotificationLog.Status.FAILED,
     )

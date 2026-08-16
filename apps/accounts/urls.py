@@ -12,7 +12,10 @@ urlpatterns = [
     path("auth/token/refresh", TokenRefreshView.as_view()),
     path("auth/logout", views.LogoutView.as_view()),
     path("accounts/me", views.MeView.as_view()),
+    path("accounts/me/avatar", views.AvatarUploadView.as_view()),
     path("accounts/me/friends", views.FriendListView.as_view()),
+    path("accounts/me/friends/pending", views.FriendPendingView.as_view()),
+    path("accounts/friends/search", views.FriendSearchView.as_view()),
     path("accounts/friends/add", views.FriendAddView.as_view()),
     path("accounts/friends/<int:pk>/accept", views.FriendAcceptView.as_view()),
 ]

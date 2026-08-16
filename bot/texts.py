@@ -31,6 +31,8 @@ TEXTS = {
         "help": (
             "FutbolGo bot ⚽\n\n"
             "/start — ilovani ochish yoki ro'yxatdan o'tish\n"
+            "/mymatches — kelayotgan o'yinlaringiz\n"
+            "/today — bugungi bo'sh o'yinlar\n"
             "/language — tilni o'zgartirish\n"
             "/help — yordam\n\n"
             "Stadion bron qilish, o'yinlar va hamyon — barchasi Mini App ichida."
@@ -39,6 +41,14 @@ TEXTS = {
             "Bu telefon raqami boshqa Telegram hisobiga bog'langan. "
             "Xatolik deb hisoblasangiz, qo'llab-quvvatlash xizmatiga murojaat qiling."
         ),
+        "not_registered": "Avval /start bosib ro'yxatdan o'ting.",
+        "mymatches_header": "📅 Kelayotgan o'yinlaringiz:",
+        "mymatches_empty": "Hozircha kelayotgan o'yinlaringiz yo'q. Ilovadan stadion tanlab bron qiling.",
+        "mymatches_item": "{stadium} · {date} {time} — {status}",
+        "today_header": "⚡ Bugungi bo'sh o'yinlar:",
+        "today_empty": "Bugun bo'sh o'yinlar yo'q — ilovadan yangi o'yin tashkil qiling yoki keyinroq tekshiring.",
+        "today_item": "{stadium} · {time} — {spots} joy bo'sh",
+        "open_button": "Ochish",
     },
     "ru": {
         "choose_language": "Здравствуйте! ⚽ Добро пожаловать в <b>FutbolGo</b>.\n\nВыберите язык:",
@@ -66,6 +76,8 @@ TEXTS = {
         "help": (
             "Бот FutbolGo ⚽\n\n"
             "/start — открыть приложение или зарегистрироваться\n"
+            "/mymatches — ваши предстоящие матчи\n"
+            "/today — свободные матчи сегодня\n"
             "/language — сменить язык\n"
             "/help — помощь\n\n"
             "Бронирование стадионов, матчи и кошелёк — всё в Mini App."
@@ -74,6 +86,14 @@ TEXTS = {
             "Этот номер телефона привязан к другому Telegram-аккаунту. "
             "Если это ошибка, обратитесь в поддержку."
         ),
+        "not_registered": "Сначала нажмите /start, чтобы зарегистрироваться.",
+        "mymatches_header": "📅 Ваши предстоящие матчи:",
+        "mymatches_empty": "Пока нет предстоящих матчей. Забронируйте стадион в приложении.",
+        "mymatches_item": "{stadium} · {date} {time} — {status}",
+        "today_header": "⚡ Свободные матчи сегодня:",
+        "today_empty": "Сегодня свободных матчей нет — создайте новый в приложении или проверьте позже.",
+        "today_item": "{stadium} · {time} — {spots} мест свободно",
+        "open_button": "Открыть",
     },
     "en": {
         "choose_language": "Hello! ⚽ Welcome to <b>FutbolGo</b>.\n\nChoose your language:",
@@ -101,6 +121,8 @@ TEXTS = {
         "help": (
             "FutbolGo bot ⚽\n\n"
             "/start — open the app or sign up\n"
+            "/mymatches — your upcoming matches\n"
+            "/today — today's open matches\n"
             "/language — change language\n"
             "/help — help\n\n"
             "Pitch booking, matches and wallet all live inside the Mini App."
@@ -109,6 +131,14 @@ TEXTS = {
             "This phone number is linked to a different Telegram account. "
             "Contact support if you believe this is a mistake."
         ),
+        "not_registered": "Tap /start first to sign up.",
+        "mymatches_header": "📅 Your upcoming matches:",
+        "mymatches_empty": "No upcoming matches yet. Book a pitch in the app.",
+        "mymatches_item": "{stadium} · {date} {time} — {status}",
+        "today_header": "⚡ Today's open matches:",
+        "today_empty": "No open matches today — create one in the app or check back later.",
+        "today_item": "{stadium} · {time} — {spots} spots left",
+        "open_button": "Open",
     },
 }
 

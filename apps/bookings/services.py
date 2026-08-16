@@ -123,6 +123,68 @@ def join_match(user: User, match: Match, mode: str, friend_ids: list, pay_mode: 
     return bookings
 
 
+def create_match(organizer: User, stadium, date, start_time, end_time, capacity, price_per_seat=None) -> Match:
+    """Ad-hoc match creation by an organizer — separate from the recurring
+    StadiumSlotTemplate → Match generator used for host-listed pitches."""
+    return Match.objects.create(
+        stadium=stadium,
+        date=date,
+        start_time=start_time,
+        end_time=end_time,
+        capacity=capacity,
+        price_per_seat=price_per_seat or stadium.base_slot_price,
+        created_by=organizer,
+    )
+
+
+@transaction.atomic
+def invite_to_match(inviter: User, match: Match, friend_ids: list) -> list[Booking]:
+    """Adds friends to an already-joined match as pending (split-pay) seats."""
+    match = Match.objects.select_for_update().get(pk=match.pk)
+
+    if match.status not in (Match.Status.WAITING, Match.Status.CONFIRMED):
+        raise BookingError("This match is no longer open for invites.")
+    starts_at = timezone.make_aware(datetime.combine(match.date, match.start_time))
+    if timezone.now() >= starts_at:
+        raise BookingError("This match has already started.")
+
+    unique_ids = {fid for fid in friend_ids if fid != inviter.id}
+    friends = list(User.objects.filter(id__in=unique_ids))
+    if len(friends) != len(unique_ids):
+        raise BookingError("Some invited friends could not be found.")
+
+    already_in = Booking.objects.filter(
+        match=match, user__in=friends, payment_status__in=ACTIVE_PAYMENT_STATUSES
+    ).exists()
+    if already_in:
+        raise BookingError("One of your friends already has a seat in this match.")
+    if match.taken + len(friends) > match.capacity:
+        raise BookingError("Not enough seats left in this match.")
+
+    bookings = []
+    for friend in friends:
+        bookings.append(
+            Booking.objects.create(
+                match=match,
+                user=friend,
+                invited_by=inviter,
+                payment_status=Booking.PaymentStatus.PENDING,
+                amount_charged=match.price_per_seat,
+            )
+        )
+        notify(
+            friend,
+            NotificationLog.NotificationType.MATCH_INVITE,
+            organizer_name=inviter.full_name or "A friend",
+            stadium_name=match.stadium.name,
+            date=match.date,
+            time=match.label,
+        )
+
+    refresh_match_status(match)
+    return bookings
+
+
 @transaction.atomic
 def accept_split(booking: Booking, user: User) -> Booking:
     # Re-read under a row lock so concurrent accepts/cancels can't double-debit.

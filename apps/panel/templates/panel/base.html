@@ -17,12 +17,23 @@
     }
   }
 </script>
-<style>[x-cloak]{display:none}</style>
+<style>
+  .icon{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  #sidebar{transition:transform .25s ease}
+  @media (max-width:767px){
+    #sidebar{position:fixed;inset:0 auto 0 0;z-index:50;transform:translateX(-100%)}
+    #sidebar.open{transform:translateX(0)}
+    #sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40}
+    #sidebar-backdrop.open{display:block}
+  }
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased">
 <div class="flex min-h-screen">
 
-  <aside class="w-64 shrink-0 bg-ink-900 text-slate-300 flex flex-col">
+  <div id="sidebar-backdrop" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('open')"></div>
+
+  <aside id="sidebar" class="w-64 shrink-0 bg-ink-900 text-slate-300 flex flex-col">
     <div class="px-6 py-5 border-b border-white/10">
       <div class="flex items-center gap-2">
         <div class="h-8 w-8 rounded-lg bg-brand-500 flex items-center justify-center font-bold text-white">F</div>
@@ -34,18 +45,22 @@
     </div>
     <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
       <a href="{% url 'panel:dashboard' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if request.resolver_match.url_name == 'dashboard' %}bg-brand-600/20 text-white{% else %}hover:bg-white/5 hover:text-white{% endif %}">
-        <span>📊</span> Dashboard
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        Dashboard
       </a>
       <a href="{% url 'panel:users' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if request.resolver_match.url_name == 'users' or request.resolver_match.url_name == 'user_detail' %}bg-brand-600/20 text-white{% else %}hover:bg-white/5 hover:text-white{% endif %}">
-        <span>👤</span> Foydalanuvchilar
+        <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Foydalanuvchilar
       </a>
       {% if request.user.is_superuser %}
       <a href="{% url 'panel:admins' %}" class="flex items-center gap-3 rounded-lg px-3 py-2 {% if request.resolver_match.url_name == 'admins' %}bg-brand-600/20 text-white{% else %}hover:bg-white/5 hover:text-white{% endif %}">
-        <span>🛡️</span> Adminlar
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+        Adminlar
       </a>
       {% endif %}
       <a href="/admin/" class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-white/5 hover:text-white">
-        <span>⚙️</span> Django Admin
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        Django Admin
       </a>
     </nav>
     <div class="px-3 py-4 border-t border-white/10">
@@ -58,17 +73,25 @@
           <p class="text-xs text-slate-500">{% if request.user.is_superuser %}Super Admin{% else %}Admin{% endif %}</p>
         </div>
       </div>
-      <a href="{% url 'panel:logout' %}" class="mt-2 block text-center rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-white">Chiqish</a>
+      <a href="{% url 'panel:logout' %}" class="mt-2 flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-white/5 hover:text-white">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Chiqish
+      </a>
     </div>
   </aside>
 
   <main class="flex-1 flex flex-col min-w-0">
-    <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
-      <h1 class="text-lg font-semibold text-slate-900">{% block header %}{% endblock %}</h1>
-      <div class="text-sm text-slate-400">{% now "d.m.Y H:i" %}</div>
+    <header class="bg-white border-b border-slate-200 px-4 md:px-8 py-4 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <button type="button" class="md:hidden shrink-0 text-slate-500" onclick="document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-backdrop').classList.add('open')" aria-label="Menu">
+          <svg class="icon" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/></svg>
+        </button>
+        <h1 class="text-lg font-semibold text-slate-900 truncate">{% block header %}{% endblock %}</h1>
+      </div>
+      <div class="text-sm text-slate-400 shrink-0 hidden sm:block">{% now "d.m.Y H:i" %}</div>
     </header>
 
-    <div class="flex-1 px-8 py-6">
+    <div class="flex-1 px-4 md:px-8 py-6 overflow-x-hidden">
       {% if messages %}
       <div class="mb-5 space-y-2">
         {% for message in messages %}

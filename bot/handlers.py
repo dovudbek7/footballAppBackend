@@ -15,7 +15,13 @@ import logging
 from aiogram import Bot, Dispatcher, Router
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    WebAppInfo,
+)
+from django.conf import settings
 from django.utils import timezone
 
 from . import onboarding
@@ -92,6 +98,112 @@ async def language_command(message: Message):
     await message.answer(
         t(lang, "choose_language"),
         reply_markup=onboarding._language_keyboard(prefix="setlang"),
+    )
+
+
+@router.message(Command("mymatches"))
+async def mymatches_command(message: Message):
+    from apps.bookings.models import ACTIVE_PAYMENT_STATUSES, Match
+    from apps.accounts.models import User
+
+    user = await User.objects.filter(telegram_id=message.from_user.id).afirst()
+    if not user:
+        await message.answer(t("uz", "not_registered"))
+        return
+    lang = user.language
+
+    today = timezone.localdate()
+    matches = [
+        m
+        async for m in Match.objects.filter(
+            bookings__user=user,
+            bookings__payment_status__in=ACTIVE_PAYMENT_STATUSES,
+            status__in=[Match.Status.WAITING, Match.Status.CONFIRMED],
+            date__gte=today,
+        )
+        .select_related("stadium")
+        .order_by("date", "start_time")
+        .distinct()[:8]
+    ]
+
+    if not matches:
+        await message.answer(t(lang, "mymatches_empty"))
+        return
+
+    lines = [t(lang, "mymatches_header")]
+    buttons = []
+    for m in matches:
+        lines.append(
+            "• "
+            + t(
+                lang,
+                "mymatches_item",
+                stadium=m.stadium.name,
+                date=m.date.strftime("%d.%m"),
+                time=m.label,
+                status=m.get_status_display(),
+            )
+        )
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"{m.stadium.name} · {m.date.strftime('%d.%m')}",
+                    web_app=WebAppInfo(url=f"{settings.FRONTEND_URL}/match/{m.id}/chat"),
+                )
+            ]
+        )
+
+    await message.answer(
+        "\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
+    )
+
+
+@router.message(Command("today"))
+async def today_command(message: Message):
+    from django.db.models import Count, Q
+
+    from apps.accounts.models import User
+    from apps.bookings.models import ACTIVE_PAYMENT_STATUSES, Match
+
+    user = await User.objects.filter(telegram_id=message.from_user.id).afirst()
+    lang = user.language if user else "uz"
+
+    today = timezone.localdate()
+    qs = (
+        Match.objects.filter(date=today, status=Match.Status.WAITING)
+        .select_related("stadium")
+        .annotate(
+            taken_count=Count(
+                "bookings", filter=Q(bookings__payment_status__in=ACTIVE_PAYMENT_STATUSES)
+            )
+        )
+    )
+    if user and user.city:
+        qs = qs.filter(stadium__city=user.city)
+    matches = [m async for m in qs.order_by("start_time")[:8]]
+
+    if not matches:
+        await message.answer(t(lang, "today_empty"))
+        return
+
+    lines = [t(lang, "today_header")]
+    buttons = []
+    for m in matches:
+        spots = m.capacity - m.taken_count
+        lines.append(
+            "• " + t(lang, "today_item", stadium=m.stadium.name, time=m.label, spots=spots)
+        )
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"{m.stadium.name} · {m.label}",
+                    web_app=WebAppInfo(url=f"{settings.FRONTEND_URL}/stadium/{m.stadium_id}"),
+                )
+            ]
+        )
+
+    await message.answer(
+        "\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
     )
 
 

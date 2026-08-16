@@ -127,6 +127,19 @@ class JoinMatchSerializer(serializers.Serializer):
     friend_ids = serializers.ListField(child=serializers.UUIDField(), required=False, default=list)
 
 
+class InviteToMatchSerializer(serializers.Serializer):
+    friend_ids = serializers.ListField(child=serializers.UUIDField(), min_length=1)
+
+
+class MatchCreateSerializer(serializers.Serializer):
+    stadium_id = serializers.UUIDField()
+    date = serializers.DateField()
+    start_time = serializers.TimeField()
+    end_time = serializers.TimeField()
+    capacity = serializers.IntegerField(min_value=2, max_value=22)
+    price_per_seat = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0, required=False)
+
+
 class MatchResultParticipantSerializer(serializers.Serializer):
     booking_id = serializers.UUIDField()
     result = serializers.ChoiceField(choices=Booking.Result.choices)

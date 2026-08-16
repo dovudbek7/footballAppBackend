@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -10,8 +10,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import Role
 from apps.notifications.models import NotificationLog
 from apps.notifications.services import notify
+from apps.stadiums.models import Stadium
 from apps.wallet.services import InsufficientFunds
 
 from . import services
@@ -20,7 +22,9 @@ from .serializers import (
     BookingSerializer,
     ChatMessageInputSerializer,
     ChatMessageSerializer,
+    InviteToMatchSerializer,
     JoinMatchSerializer,
+    MatchCreateSerializer,
     MatchResultInputSerializer,
     ScheduledMatchSerializer,
 )
@@ -41,6 +45,52 @@ class JoinMatchView(APIView):
         except (services.BookingError, InsufficientFunds) as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(BookingSerializer(bookings, many=True).data, status=status.HTTP_201_CREATED)
+
+
+class InviteToMatchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        match = get_object_or_404(Match, pk=pk)
+        serializer = InviteToMatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            bookings = services.invite_to_match(request.user, match, serializer.validated_data["friend_ids"])
+        except services.BookingError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(BookingSerializer(bookings, many=True).data, status=status.HTTP_201_CREATED)
+
+
+class MatchCreateView(APIView):
+    """Organizers create ad-hoc matches at an existing stadium."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != Role.ORGANIZER:
+            return Response(
+                {"detail": "Only organizers can create matches."}, status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = MatchCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        stadium = get_object_or_404(Stadium, pk=data["stadium_id"], is_active=True)
+        try:
+            match = services.create_match(
+                request.user,
+                stadium,
+                data["date"],
+                data["start_time"],
+                data["end_time"],
+                data["capacity"],
+                data.get("price_per_seat"),
+            )
+        except IntegrityError:
+            return Response(
+                {"detail": "This stadium already has a match at that date and time."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(ScheduledMatchSerializer(match, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 
 class AcceptSplitView(APIView):

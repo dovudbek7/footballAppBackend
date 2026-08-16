@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/", include("apps.bookings.urls")),
     path("api/", include("apps.wallet.urls")),
     path("api/", include("apps.gamification.urls")),
+    path("api/", include("apps.notifications.urls")),
 ]
 
 if settings.DEBUG:

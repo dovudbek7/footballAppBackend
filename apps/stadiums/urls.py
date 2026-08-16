@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path("stadiums", views.StadiumListView.as_view()),
+    path("stadiums/create", views.StadiumCreateView.as_view()),
+    path("amenities", views.AmenityListView.as_view()),
     path("stadiums/<uuid:pk>", views.StadiumDetailView.as_view()),
     path("stadiums/<uuid:pk>/slots", views.StadiumSlotsView.as_view()),
     path("stadiums/<uuid:pk>/favorite", views.FavoriteToggleView.as_view()),

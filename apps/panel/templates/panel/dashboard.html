@@ -47,9 +47,9 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
   <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
     <p class="text-sm font-medium text-slate-900 mb-4">Ro'yxatdan o'tish — so'nggi 14 kun</p>
-    <div class="flex items-end gap-2 h-40">
+    <div class="flex items-end gap-2 h-40 overflow-x-auto">
       {% for point in signup_series %}
-      <div class="flex-1 flex flex-col items-center justify-end gap-1 group">
+      <div class="flex-1 h-full flex flex-col items-center justify-end gap-1 group min-w-[18px]">
         <span class="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100">{{ point.count }}</span>
         <div class="w-full bg-brand-500 rounded-t" style="height: {{ point.pct }}%; min-height:2px;"></div>
         <span class="text-[10px] text-slate-400">{{ point.label }}</span>

@@ -11,8 +11,15 @@ from rest_framework.views import APIView
 from apps.bookings.models import ACTIVE_PAYMENT_STATUSES, Match
 from apps.bookings.serializers import MatchSlotSerializer
 
-from .models import FavoriteStadium, Review, Stadium
-from .serializers import ReviewSerializer, StadiumDetailSerializer, StadiumListSerializer
+from apps.accounts.models import Role
+
+from .models import Amenity, FavoriteStadium, Review, Stadium
+from .serializers import (
+    ReviewSerializer,
+    StadiumCreateSerializer,
+    StadiumDetailSerializer,
+    StadiumListSerializer,
+)
 
 
 def _annotated_stadiums():
@@ -36,7 +43,15 @@ class StadiumListView(generics.ListAPIView):
         district = self.request.query_params.get("district")
         if district:
             qs = qs.filter(district__iexact=district)
-        return qs
+        amenities = self.request.query_params.get("amenities")
+        if amenities:
+            keys = [key.strip() for key in amenities.split(",") if key.strip()]
+            for key in keys:
+                qs = qs.filter(amenities__key=key)
+        max_price = self.request.query_params.get("max_price")
+        if max_price:
+            qs = qs.filter(base_slot_price__lte=max_price)
+        return qs.distinct()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -46,6 +61,31 @@ class StadiumListView(generics.ListAPIView):
                 FavoriteStadium.objects.filter(user=user).values_list("stadium_id", flat=True)
             )
         return context
+
+
+class AmenityListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+    pagination_class = None
+    queryset = Amenity.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        return Response([{"key": a.key, "label": a.label} for a in self.get_queryset()])
+
+
+class StadiumCreateView(APIView):
+    """Hosts list a new pitch."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != Role.HOST:
+            return Response({"detail": "Only hosts can create listings."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = StadiumCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        stadium = serializer.save(owner_name=request.user.full_name)
+        return Response(
+            StadiumDetailSerializer(stadium, context={"request": request}).data, status=status.HTTP_201_CREATED
+        )
 
 
 class StadiumDetailView(generics.RetrieveAPIView):

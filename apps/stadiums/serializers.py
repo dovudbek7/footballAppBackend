@@ -3,6 +3,38 @@ from rest_framework import serializers
 from .models import Amenity, FavoriteStadium, Review, Stadium, StadiumImage
 
 
+class StadiumCreateSerializer(serializers.ModelSerializer):
+    amenity_keys = serializers.SlugRelatedField(
+        source="amenities",
+        slug_field="key",
+        queryset=Amenity.objects.all(),
+        many=True,
+        required=False,
+    )
+
+    class Meta:
+        model = Stadium
+        fields = (
+            "id",
+            "name",
+            "district",
+            "city",
+            "address",
+            "main_image_url",
+            "base_price_per_hour",
+            "base_slot_price",
+            "amenity_keys",
+        )
+        read_only_fields = ("id",)
+
+    def create(self, validated_data):
+        amenities = validated_data.pop("amenities", [])
+        stadium = Stadium.objects.create(**validated_data)
+        if amenities:
+            stadium.amenities.set(amenities)
+        return stadium
+
+
 class AmenitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Amenity

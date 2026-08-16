@@ -48,6 +48,12 @@ class Language(models.TextChoices):
     ENGLISH = "en", "English"
 
 
+class Role(models.TextChoices):
+    PLAYER = "player", "Player"
+    HOST = "host", "Host"
+    ORGANIZER = "organizer", "Organizer"
+
+
 class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -68,6 +74,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     is_onboarded = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    role = models.CharField(max_length=16, choices=Role.choices, default=Role.PLAYER)
 
     objects = UserManager()
 
