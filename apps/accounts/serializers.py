@@ -18,6 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
             "telegram_id",
             "telegram_username",
             "full_name",
+            "bio",
             "avatar_url",
             "region",
             "city",
@@ -46,8 +47,17 @@ class UserOnboardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("full_name", "avatar_url", "region", "city", "position", "experience_level", "language")
-        extra_kwargs = {"full_name": {"required": False}}
+        fields = (
+            "full_name",
+            "bio",
+            "avatar_url",
+            "region",
+            "city",
+            "position",
+            "experience_level",
+            "language",
+        )
+        extra_kwargs = {"full_name": {"required": False}, "bio": {"required": False}}
 
     def update(self, instance, validated_data):
         instance = super().update(instance, validated_data)

@@ -2,12 +2,15 @@ import uuid as uuid_lib
 
 from django.core.files.storage import default_storage
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.gamification.serializers import ProfileStatsSerializer, RecentActivitySerializer
+from apps.gamification.services import compute_profile_stats, compute_recent_activity
 from apps.notifications.models import NotificationLog
 from apps.notifications.services import notify
 from apps.wallet.models import Wallet
@@ -245,3 +248,22 @@ class FriendAcceptView(APIView):
             friend_name=request.user.full_name or request.user.phone or "Someone",
         )
         return Response({"status": "accepted"})
+
+
+class FriendProfileView(APIView):
+    """A friend's public profile: bio, stats, recent activity. Only visible
+    to accepted friends — not a general user-lookup endpoint."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        target = get_object_or_404(User, pk=pk)
+        is_friend = Friendship.objects.filter(
+            user=request.user, friend=target, status=Friendship.Status.ACCEPTED
+        ).exists()
+        if not is_friend:
+            return Response({"detail": "Not friends with this user."}, status=status.HTTP_403_FORBIDDEN)
+
+        stats = ProfileStatsSerializer(compute_profile_stats(target)).data
+        activity = RecentActivitySerializer(compute_recent_activity(target, limit=10), many=True).data
+        return Response({"id": target.id, **stats, "activity": activity})

@@ -11,6 +11,7 @@ class PlayerStatSerializer(serializers.ModelSerializer):
 
 class ProfileStatsSerializer(serializers.Serializer):
     name = serializers.CharField()
+    bio = serializers.CharField(allow_blank=True)
     position = serializers.CharField()
     city = serializers.CharField()
     avatar = serializers.CharField()

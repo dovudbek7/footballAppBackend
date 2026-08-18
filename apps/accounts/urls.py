@@ -18,4 +18,5 @@ urlpatterns = [
     path("accounts/friends/search", views.FriendSearchView.as_view()),
     path("accounts/friends/add", views.FriendAddView.as_view()),
     path("accounts/friends/<int:pk>/accept", views.FriendAcceptView.as_view()),
+    path("accounts/friends/<uuid:pk>/profile", views.FriendProfileView.as_view()),
 ]

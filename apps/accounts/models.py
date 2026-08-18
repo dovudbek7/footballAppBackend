@@ -62,6 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     telegram_username = models.CharField(max_length=64, blank=True)
 
     full_name = models.CharField(max_length=120, blank=True)
+    bio = models.CharField(max_length=280, blank=True)
     avatar_url = models.URLField(blank=True)
     region = models.CharField(max_length=64, blank=True)
     city = models.CharField(max_length=64, blank=True)
