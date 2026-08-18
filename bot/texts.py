@@ -33,6 +33,7 @@ TEXTS = {
             "/start — ilovani ochish yoki ro'yxatdan o'tish\n"
             "/mymatches — kelayotgan o'yinlaringiz\n"
             "/today — bugungi bo'sh o'yinlar\n"
+            "/referal — do'stlaringizni taklif qiling\n"
             "/language — tilni o'zgartirish\n"
             "/help — yordam\n\n"
             "Stadion bron qilish, o'yinlar va hamyon — barchasi Mini App ichida."
@@ -42,6 +43,15 @@ TEXTS = {
             "Xatolik deb hisoblasangiz, qo'llab-quvvatlash xizmatiga murojaat qiling."
         ),
         "not_registered": "Avval /start bosib ro'yxatdan o'ting.",
+        "referal_text": (
+            "👥 Do'stlaringizni <b>FutbolGo</b>'ga taklif qiling!\n\n"
+            "Havolangiz:\n{link}\n\n"
+            "Ular havola orqali kirsa, avtomatik do'stlik so'rovi yuboriladi."
+        ),
+        "referal_share_button": "Do'stlarga ulashish",
+        "referal_share_text": "⚽ FutbolGo'da futbolga qo'shil! Havola orqali ro'yxatdan o't:",
+        "referral_added": "✅ {name} bilan do'stlik so'rovi yuborildi!",
+        "referral_friend_joined": "👥 <b>{name}</b> sizning havolangiz orqali qo'shildi va do'stlikka so'rov yubordi!",
         "mymatches_header": "📅 Kelayotgan o'yinlaringiz:",
         "mymatches_empty": "Hozircha kelayotgan o'yinlaringiz yo'q. Ilovadan stadion tanlab bron qiling.",
         "mymatches_item": "{stadium} · {date} {time} — {status}",
@@ -78,6 +88,7 @@ TEXTS = {
             "/start — открыть приложение или зарегистрироваться\n"
             "/mymatches — ваши предстоящие матчи\n"
             "/today — свободные матчи сегодня\n"
+            "/referal — пригласить друзей\n"
             "/language — сменить язык\n"
             "/help — помощь\n\n"
             "Бронирование стадионов, матчи и кошелёк — всё в Mini App."
@@ -87,6 +98,15 @@ TEXTS = {
             "Если это ошибка, обратитесь в поддержку."
         ),
         "not_registered": "Сначала нажмите /start, чтобы зарегистрироваться.",
+        "referal_text": (
+            "👥 Приглашайте друзей в <b>FutbolGo</b>!\n\n"
+            "Ваша ссылка:\n{link}\n\n"
+            "Когда друг перейдёт по ссылке, ему автоматически отправится заявка в друзья."
+        ),
+        "referal_share_button": "Поделиться с друзьями",
+        "referal_share_text": "⚽ Присоединяйся к футболу в FutbolGo! Регистрируйся по ссылке:",
+        "referral_added": "✅ Заявка в друзья отправлена {name}!",
+        "referral_friend_joined": "👥 <b>{name}</b> присоединился по вашей ссылке и отправил заявку в друзья!",
         "mymatches_header": "📅 Ваши предстоящие матчи:",
         "mymatches_empty": "Пока нет предстоящих матчей. Забронируйте стадион в приложении.",
         "mymatches_item": "{stadium} · {date} {time} — {status}",
@@ -123,6 +143,7 @@ TEXTS = {
             "/start — open the app or sign up\n"
             "/mymatches — your upcoming matches\n"
             "/today — today's open matches\n"
+            "/referal — invite your friends\n"
             "/language — change language\n"
             "/help — help\n\n"
             "Pitch booking, matches and wallet all live inside the Mini App."
@@ -132,6 +153,15 @@ TEXTS = {
             "Contact support if you believe this is a mistake."
         ),
         "not_registered": "Tap /start first to sign up.",
+        "referal_text": (
+            "👥 Invite your friends to <b>FutbolGo</b>!\n\n"
+            "Your link:\n{link}\n\n"
+            "When they join via the link, a friend request is sent automatically."
+        ),
+        "referal_share_button": "Share with friends",
+        "referal_share_text": "⚽ Join football on FutbolGo! Sign up via my link:",
+        "referral_added": "✅ Friend request sent to {name}!",
+        "referral_friend_joined": "👥 <b>{name}</b> joined via your link and sent a friend request!",
         "mymatches_header": "📅 Your upcoming matches:",
         "mymatches_empty": "No upcoming matches yet. Book a pitch in the app.",
         "mymatches_item": "{stadium} · {date} {time} — {status}",

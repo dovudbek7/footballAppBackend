@@ -82,10 +82,64 @@ def _normalize_phone(raw: str) -> str:
     return phone
 
 
-async def begin_onboarding(message: Message, state: FSMContext) -> None:
+async def begin_onboarding(message: Message, state: FSMContext, referral_code: str | None = None) -> None:
     await state.clear()
+    if referral_code:
+        await state.update_data(referral_code=referral_code)
     await state.set_state(Onboarding.language)
     await message.answer(t("uz", "choose_language"), reply_markup=_language_keyboard())
+
+
+async def handle_referral_start(message: Message, state: FSMContext, code: str) -> None:
+    """/start ref_<code> deep link — from the Friends-page share button or /referal.
+
+    An already-onboarded user gets an instant friend request sent to the
+    referrer; a new/incomplete signup carries the code through the FSM and
+    the request is sent once onboarding finishes in `region_chosen`.
+    """
+    from apps.accounts.models import Friendship, User
+    from apps.wallet.models import Wallet
+
+    code = (code or "").strip().upper()
+    wallet = await Wallet.objects.filter(paynet_id=code).select_related("user").afirst()
+    referrer = wallet.user if wallet else None
+
+    user = await User.objects.filter(telegram_id=message.from_user.id).afirst()
+
+    if user and user.is_onboarded:
+        lang = user.language
+        if not referrer or referrer.id == user.id:
+            await message.answer(
+                t(lang, "welcome_back", name=user.full_name or message.from_user.first_name),
+                reply_markup=open_app_keyboard(lang),
+            )
+            return
+
+        exists = await Friendship.objects.filter(user=user, friend=referrer).aexists()
+        if not exists:
+            await Friendship.objects.acreate(user=user, friend=referrer)
+            await _notify_referrer(message, referrer, user)
+
+        await message.answer(
+            t(lang, "referral_added", name=referrer.full_name or referrer.phone or "—"),
+            reply_markup=open_app_keyboard(lang),
+        )
+        return
+
+    await begin_onboarding(message, state, referral_code=code if referrer else None)
+
+
+async def _notify_referrer(message: Message, referrer, new_friend) -> None:
+    if not referrer.telegram_id:
+        return
+    try:
+        await message.bot.send_message(
+            referrer.telegram_id,
+            t(referrer.language, "referral_friend_joined", name=new_friend.full_name or "Someone"),
+            parse_mode="HTML",
+        )
+    except Exception:
+        logger.warning("Could not notify referrer %s about new friend request", referrer.id)
 
 
 @router.callback_query(Onboarding.language, F.data.startswith("lang:"))
@@ -204,6 +258,7 @@ async def region_chosen(callback: CallbackQuery, state: FSMContext):
     user.is_onboarded = True
     await user.asave()
 
+    referral_code = data.get("referral_code")
     await state.clear()
     await callback.answer()
     await callback.message.edit_text(
@@ -215,6 +270,18 @@ async def region_chosen(callback: CallbackQuery, state: FSMContext):
         t(lang, "intro", name=user.full_name),
         reply_markup=open_app_keyboard(lang),
     )
+
+    if referral_code:
+        from apps.accounts.models import Friendship
+        from apps.wallet.models import Wallet
+
+        wallet = await Wallet.objects.filter(paynet_id=referral_code).select_related("user").afirst()
+        referrer = wallet.user if wallet else None
+        if referrer and referrer.id != user.id:
+            exists = await Friendship.objects.filter(user=user, friend=referrer).aexists()
+            if not exists:
+                await Friendship.objects.acreate(user=user, friend=referrer)
+                await _notify_referrer(callback.message, referrer, user)
 
 
 @router.callback_query(F.data.startswith("setlang:"))

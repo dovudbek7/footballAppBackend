@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from .serializers import (
     TransactionSerializer,
     WalletSerializer,
 )
-from .services import get_or_create_wallet
+from .services import credit, get_or_create_wallet
 
 
 class WalletView(APIView):
@@ -38,6 +39,9 @@ class PaymentMethodListView(generics.ListAPIView):
 
 
 class TopUpRequestListCreateView(generics.ListCreateAPIView):
+    """Real payment gateways aren't wired up yet, so top-ups are credited
+    instantly on submission instead of waiting on admin review."""
+
     permission_classes = [IsAuthenticated]
     serializer_class = TopUpRequestSerializer
 
@@ -45,4 +49,15 @@ class TopUpRequestListCreateView(generics.ListCreateAPIView):
         return TopUpRequest.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        topup = serializer.save(
+            user=self.request.user,
+            status=TopUpRequest.Status.APPROVED,
+            reviewed_at=timezone.now(),
+        )
+        credit(
+            self.request.user,
+            topup.amount,
+            title="Top-up",
+            subtitle=topup.payment_method.name,
+            topup_request=topup,
+        )

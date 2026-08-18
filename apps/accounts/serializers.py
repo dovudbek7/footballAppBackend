@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from apps.wallet.services import get_or_create_wallet
@@ -7,6 +8,7 @@ from .models import ExperienceLevel, Friendship, User
 
 class UserSerializer(serializers.ModelSerializer):
     friend_code = serializers.SerializerMethodField()
+    referral_link = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -24,12 +26,19 @@ class UserSerializer(serializers.ModelSerializer):
             "language",
             "role",
             "friend_code",
+            "referral_link",
             "is_onboarded",
         )
         read_only_fields = ("id", "phone", "telegram_id", "telegram_username", "role", "is_onboarded")
 
     def get_friend_code(self, obj):
         return get_or_create_wallet(obj).paynet_id
+
+    def get_referral_link(self, obj):
+        if not settings.TELEGRAM_BOT_USERNAME:
+            return ""
+        code = get_or_create_wallet(obj).paynet_id
+        return f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start=ref_{code}"
 
 
 class UserOnboardSerializer(serializers.ModelSerializer):

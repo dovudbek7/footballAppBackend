@@ -32,10 +32,15 @@ router = Router()
 
 
 @router.message(CommandStart(deep_link=True))
-async def start_with_token(message: Message, command: CommandObject):
+async def start_with_token(message: Message, command: CommandObject, state: FSMContext):
     from apps.accounts.models import OTPCode, TelegramLinkToken, User
 
-    token = command.args
+    token = command.args or ""
+
+    if token.startswith("ref_"):
+        await onboarding.handle_referral_start(message, state, token[4:])
+        return
+
     link = await TelegramLinkToken.objects.filter(token=token).afirst()
 
     if not link or link.is_expired:
@@ -213,6 +218,37 @@ async def help_command(message: Message):
 
     user = await User.objects.filter(telegram_id=message.from_user.id).afirst()
     await message.answer(t(user.language if user else "uz", "help"))
+
+
+@router.message(Command("referal"))
+async def referal_command(message: Message):
+    from apps.accounts.models import User
+    from apps.wallet.models import Wallet
+
+    user = await User.objects.filter(telegram_id=message.from_user.id).afirst()
+    if not user:
+        await message.answer(t("uz", "not_registered"))
+        return
+    lang = user.language
+
+    wallet, _ = await Wallet.objects.aget_or_create(user=user)
+    bot_username = settings.TELEGRAM_BOT_USERNAME or (await message.bot.me()).username
+    link = f"https://t.me/{bot_username}?start=ref_{wallet.paynet_id}"
+
+    await message.answer(
+        t(lang, "referal_text", link=link),
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=t(lang, "referal_share_button"),
+                        url=f"https://t.me/share/url?url={link}&text={t(lang, 'referal_share_text')}",
+                    )
+                ]
+            ]
+        ),
+    )
 
 
 def build_dispatcher() -> Dispatcher:
