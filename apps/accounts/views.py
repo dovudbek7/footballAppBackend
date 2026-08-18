@@ -251,19 +251,28 @@ class FriendAcceptView(APIView):
 
 
 class FriendProfileView(APIView):
-    """A friend's public profile: bio, stats, recent activity. Only visible
-    to accepted friends — not a general user-lookup endpoint."""
+    """A friend's public profile: bio, stats, recent activity, their own
+    friends list. Visible to anyone with an existing relationship to this
+    user — accepted friends, or either side of a pending request — so a
+    request in the Requests tab can be opened before deciding whether to
+    accept it. Not a general user-lookup endpoint."""
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         target = get_object_or_404(User, pk=pk)
-        is_friend = Friendship.objects.filter(
-            user=request.user, friend=target, status=Friendship.Status.ACCEPTED
+        is_related = Friendship.objects.filter(
+            Q(user=request.user, friend=target) | Q(user=target, friend=request.user)
         ).exists()
-        if not is_friend:
-            return Response({"detail": "Not friends with this user."}, status=status.HTTP_403_FORBIDDEN)
+        if not is_related:
+            return Response({"detail": "Not connected to this user."}, status=status.HTTP_403_FORBIDDEN)
 
         stats = ProfileStatsSerializer(compute_profile_stats(target)).data
         activity = RecentActivitySerializer(compute_recent_activity(target, limit=10), many=True).data
-        return Response({"id": target.id, **stats, "activity": activity})
+
+        friend_ids = Friendship.objects.filter(
+            user=target, status=Friendship.Status.ACCEPTED
+        ).values_list("friend_id", flat=True)
+        friends = FriendSerializer(User.objects.filter(id__in=friend_ids), many=True).data
+
+        return Response({"id": target.id, **stats, "activity": activity, "friends": friends})

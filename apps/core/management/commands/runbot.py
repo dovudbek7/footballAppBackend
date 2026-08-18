@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 class Command(BaseCommand):
-    help = "Run the FutbolGo Telegram bot (aiogram, long polling) plus its scheduled jobs."
+    help = "Run the Sportify Telegram bot (aiogram, long polling) plus its scheduled jobs."
 
     def handle(self, *args, **options):
         if not settings.TELEGRAM_BOT_TOKEN:

@@ -3,8 +3,8 @@ from bot.telegram_client import send_message
 from .models import NotificationLog
 
 _TEMPLATES = {
-    NotificationLog.NotificationType.OTP_CODE: "Your FutbolGo login code: <b>{code}</b> (valid 5 min).",
-    NotificationLog.NotificationType.TELEGRAM_LINK: "Telegram linked to FutbolGo. Sending your login code now...",
+    NotificationLog.NotificationType.OTP_CODE: "Your Sportify login code: <b>{code}</b> (valid 5 min).",
+    NotificationLog.NotificationType.TELEGRAM_LINK: "Telegram linked to Sportify. Sending your login code now...",
     NotificationLog.NotificationType.BOOKING_CONFIRMED: (
         "✅ Booking confirmed: {stadium_name} on {date} at {time}."
     ),

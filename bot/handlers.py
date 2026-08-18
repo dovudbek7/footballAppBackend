@@ -1,4 +1,4 @@
-"""aiogram v3 update handlers for the FutbolGo bot.
+"""aiogram v3 update handlers for the Sportify bot.
 
 Runs as its own process (`python manage.py runbot`) but imports the Django ORM
 directly — one codebase, one migration history, no duplicated models in a
@@ -76,7 +76,7 @@ async def start_with_token(message: Message, command: CommandObject, state: FSMC
     link.otp_code = otp
     await link.asave(update_fields=["telegram_id", "status", "otp_code"])
 
-    await message.answer(f"Your FutbolGo login code: <b>{otp.code}</b> (valid 5 min).", parse_mode="HTML")
+    await message.answer(f"Your Sportify login code: <b>{otp.code}</b> (valid 5 min).", parse_mode="HTML")
 
 
 @router.message(CommandStart())

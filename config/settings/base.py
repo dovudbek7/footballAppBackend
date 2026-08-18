@@ -121,7 +121,7 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "FutbolGo API",
+    "TITLE": "Sportify API",
     "DESCRIPTION": "Amateur football pitch booking + matchmaking backend",
     "VERSION": "1.0.0",
 }
