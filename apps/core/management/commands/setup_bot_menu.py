@@ -15,7 +15,7 @@ class Command(BaseCommand):
             json={
                 "menu_button": {
                     "type": "web_app",
-                    "text": "Open FutbolGo",
+                    "text": "Open",
                     "web_app": {"url": settings.FRONTEND_URL},
                 }
             },
