@@ -145,6 +145,7 @@ class AvatarUploadView(APIView):
 class FriendListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = FriendSerializer
+    pagination_class = None
 
     def get_queryset(self):
         ids = Friendship.objects.filter(
@@ -197,6 +198,7 @@ class FriendPendingView(generics.ListAPIView):
 
     permission_classes = [IsAuthenticated]
     serializer_class = FriendRequestSerializer
+    pagination_class = None
 
     def get_queryset(self):
         return Friendship.objects.filter(
