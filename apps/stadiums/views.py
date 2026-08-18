@@ -55,6 +55,9 @@ class StadiumListView(generics.ListAPIView):
             keys = [key.strip() for key in amenities.split(",") if key.strip()]
             for key in keys:
                 qs = qs.filter(amenities__key=key)
+        min_price = self.request.query_params.get("min_price")
+        if min_price:
+            qs = qs.filter(base_slot_price__gte=min_price)
         max_price = self.request.query_params.get("max_price")
         if max_price:
             qs = qs.filter(base_slot_price__lte=max_price)
