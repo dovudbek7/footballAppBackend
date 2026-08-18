@@ -25,7 +25,23 @@
         <div class="flex justify-between"><dt class="text-slate-400">Holat</dt><dd>
           {% if target.is_active %}<span class="text-brand-600">Faol</span>{% else %}<span class="text-red-600">Bloklangan</span>{% endif %}
         </dd></div>
+        <div class="flex justify-between"><dt class="text-slate-400">Rol</dt><dd class="text-slate-700">{{ target.get_role_display }}</dd></div>
       </dl>
+
+      <form method="post" class="mt-4 space-y-2">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_role">
+        <label class="block text-xs text-slate-400">Rolni o'zgartirish</label>
+        <select name="role" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+          {% for value, label in roles %}
+          <option value="{{ value }}" {% if target.role == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="w-full rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-sm py-2 font-medium">
+          Rolni saqlash
+        </button>
+      </form>
+
       <form method="post" class="mt-4">
         {% csrf_token %}
         <input type="hidden" name="action" value="toggle_active">

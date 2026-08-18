@@ -8,7 +8,10 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from apps.accounts.models import OrganizerRequest, Role
 from apps.bookings.models import Booking, Match
+from apps.notifications.models import NotificationLog
+from apps.notifications.services import notify
 from apps.stadiums.models import Stadium
 from apps.wallet import services
 from apps.wallet.models import TopUpRequest, Wallet
@@ -103,6 +106,46 @@ def dashboard(request):
 
 
 @staff_required
+def organizer_requests(request):
+    if request.method == "POST":
+        req = get_object_or_404(OrganizerRequest, pk=request.POST.get("request_id"))
+        action = request.POST.get("action")
+        if req.status == OrganizerRequest.Status.PENDING and action in ("approve", "reject"):
+            req.status = (
+                OrganizerRequest.Status.APPROVED if action == "approve" else OrganizerRequest.Status.REJECTED
+            )
+            req.reviewed_by = request.user
+            req.reviewed_at = timezone.now()
+            req.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+
+            if action == "approve":
+                req.user.role = Role.ORGANIZER
+                req.user.save(update_fields=["role"])
+                notify(req.user, NotificationLog.NotificationType.ORGANIZER_REQUEST_APPROVED)
+                messages.success(request, f"{req.user.full_name or req.user.phone} organizer bo'ldi.")
+            else:
+                notify(req.user, NotificationLog.NotificationType.ORGANIZER_REQUEST_REJECTED)
+                messages.success(request, "So'rov rad etildi.")
+        return redirect("panel:organizer_requests")
+
+    pending = (
+        OrganizerRequest.objects.select_related("user")
+        .filter(status=OrganizerRequest.Status.PENDING)
+        .order_by("-created_at")
+    )
+    reviewed = (
+        OrganizerRequest.objects.select_related("user", "reviewed_by")
+        .exclude(status=OrganizerRequest.Status.PENDING)
+        .order_by("-reviewed_at")[:30]
+    )
+    return render(
+        request,
+        "panel/organizer_requests.html",
+        {"pending": pending, "reviewed": reviewed},
+    )
+
+
+@staff_required
 def users_list(request):
     q = request.GET.get("q", "").strip()
     qs = User.objects.order_by("-created_at")
@@ -140,6 +183,14 @@ def user_detail(request, pk):
             target.is_active = not target.is_active
             target.save(update_fields=["is_active"])
             messages.success(request, "Foydalanuvchi holati yangilandi.")
+        elif action == "change_role":
+            new_role = request.POST.get("role", "")
+            if new_role in Role.values:
+                target.role = new_role
+                target.save(update_fields=["role"])
+                messages.success(request, f"Rol '{target.get_role_display()}' ga o'zgartirildi.")
+            else:
+                messages.error(request, "Noto'g'ri rol tanlandi.")
         return redirect("panel:user_detail", pk=pk)
 
     transactions = wallet.transactions.order_by("-created_at")[:20]
@@ -155,6 +206,7 @@ def user_detail(request, pk):
             "transactions": transactions,
             "bookings": bookings,
             "badges": badges,
+            "roles": Role.choices,
         },
     )
 

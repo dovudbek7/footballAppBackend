@@ -174,6 +174,24 @@ class TelegramLinkToken(TimeStampedModel):
         return f"https://t.me/{bot_username}?start={self.token}"
 
 
+class OrganizerRequest(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    user = models.ForeignKey(User, related_name="organizer_requests", on_delete=models.CASCADE)
+    description = models.TextField(max_length=1000, blank=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    reviewed_by = models.ForeignKey(
+        User, null=True, blank=True, related_name="+", on_delete=models.SET_NULL
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
 class Friendship(TimeStampedModel):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"

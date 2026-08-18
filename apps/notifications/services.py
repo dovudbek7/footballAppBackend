@@ -32,6 +32,12 @@ _TEMPLATES = {
     NotificationLog.NotificationType.MATCH_INVITE: (
         "⚽ {organizer_name} invited you to a match at {stadium_name} on {date} at {time}."
     ),
+    NotificationLog.NotificationType.ORGANIZER_REQUEST_APPROVED: (
+        "🎉 Tabriklaymiz! Organizer bo'lish so'rovingiz tasdiqlandi — endi o'zingiz o'yin yaratishingiz mumkin."
+    ),
+    NotificationLog.NotificationType.ORGANIZER_REQUEST_REJECTED: (
+        "Organizer bo'lish so'rovingiz rad etildi."
+    ),
 }
 
 

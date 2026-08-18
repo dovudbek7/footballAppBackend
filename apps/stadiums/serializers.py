@@ -74,6 +74,8 @@ class StadiumListSerializer(serializers.ModelSerializer):
             "rating",
             "reviews_count",
             "address",
+            "lat",
+            "lng",
             "amenities",
             "base_price_per_hour",
             "base_slot_price",

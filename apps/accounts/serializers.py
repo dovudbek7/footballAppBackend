@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.wallet.services import get_or_create_wallet
 
-from .models import ExperienceLevel, Friendship, User
+from .models import ExperienceLevel, Friendship, OrganizerRequest, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -84,6 +84,13 @@ class OTPVerifySerializer(serializers.Serializer):
 
 class TelegramWebAppAuthSerializer(serializers.Serializer):
     init_data = serializers.CharField()
+
+
+class OrganizerRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrganizerRequest
+        fields = ("id", "description", "status", "created_at")
+        read_only_fields = ("id", "status", "created_at")
 
 
 class FriendSerializer(serializers.Serializer):

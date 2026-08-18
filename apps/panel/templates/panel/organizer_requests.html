@@ -1,0 +1,73 @@
+{% extends "panel/base.html" %}
+{% block title %}Organizer so'rovlari{% endblock %}
+{% block header %}Organizer so'rovlari{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-8">
+  <div class="px-5 py-3 border-b border-slate-100 text-sm font-medium text-slate-900">
+    Kutilmoqda ({{ pending|length }})
+  </div>
+  <div class="divide-y divide-slate-100">
+    {% for r in pending %}
+    <div class="px-5 py-4 flex items-start justify-between gap-4">
+      <div class="min-w-0 flex-1">
+        <a href="{% url 'panel:user_detail' r.user.pk %}" class="font-medium text-slate-900 hover:underline">
+          {{ r.user.full_name|default:r.user.phone }}
+        </a>
+        <p class="text-xs text-slate-400 mt-0.5">{{ r.created_at|date:"d.m.Y H:i" }}</p>
+        {% if r.description %}
+        <p class="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{{ r.description }}</p>
+        {% else %}
+        <p class="text-sm text-slate-400 mt-2 italic">Izoh yo'q</p>
+        {% endif %}
+      </div>
+      <div class="flex shrink-0 gap-2">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="request_id" value="{{ r.id }}">
+          <input type="hidden" name="action" value="approve">
+          <button type="submit" class="rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium px-3 py-2">
+            Tasdiqlash
+          </button>
+        </form>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="request_id" value="{{ r.id }}">
+          <input type="hidden" name="action" value="reject">
+          <button type="submit" class="rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium px-3 py-2">
+            Rad etish
+          </button>
+        </form>
+      </div>
+    </div>
+    {% empty %}
+    <p class="px-5 py-8 text-center text-slate-400 text-sm">Kutilayotgan so'rov yo'q</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+  <div class="px-5 py-3 border-b border-slate-100 text-sm font-medium text-slate-900">
+    So'nggi ko'rib chiqilganlar
+  </div>
+  <div class="divide-y divide-slate-100">
+    {% for r in reviewed %}
+    <div class="px-5 py-3 flex items-center justify-between gap-4">
+      <div class="min-w-0">
+        <a href="{% url 'panel:user_detail' r.user.pk %}" class="text-sm text-slate-800 hover:underline">
+          {{ r.user.full_name|default:r.user.phone }}
+        </a>
+        <span class="text-xs text-slate-400 ml-2">{{ r.reviewed_at|date:"d.m.Y H:i" }} · {{ r.reviewed_by.full_name|default:r.reviewed_by.phone|default:"—" }}</span>
+      </div>
+      {% if r.status == "approved" %}
+      <span class="inline-flex items-center rounded-full bg-brand-50 text-brand-700 text-xs px-2 py-0.5">Tasdiqlangan</span>
+      {% else %}
+      <span class="inline-flex items-center rounded-full bg-red-50 text-red-600 text-xs px-2 py-0.5">Rad etilgan</span>
+      {% endif %}
+    </div>
+    {% empty %}
+    <p class="px-5 py-8 text-center text-slate-400 text-sm">Hali yo'q</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

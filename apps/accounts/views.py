@@ -16,11 +16,12 @@ from apps.notifications.services import notify
 from apps.wallet.models import Wallet
 
 from . import services
-from .models import Friendship, User
+from .models import Friendship, OrganizerRequest, Role, User
 from .serializers import (
     FriendAddSerializer,
     FriendRequestSerializer,
     FriendSerializer,
+    OrganizerRequestSerializer,
     OTPRequestSerializer,
     OTPVerifySerializer,
     TelegramWebAppAuthSerializer,
@@ -118,6 +119,35 @@ class MeView(generics.RetrieveUpdateAPIView):
         if self.request.method in ("PATCH", "PUT"):
             return UserOnboardSerializer
         return UserSerializer
+
+
+class OrganizerRequestView(APIView):
+    """Player -> organizer bo'lish uchun so'rov. GET oxirgi so'rovni, POST yangisini yaratadi."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        req = OrganizerRequest.objects.filter(user=request.user).order_by("-created_at").first()
+        if not req:
+            return Response(None)
+        return Response(OrganizerRequestSerializer(req).data)
+
+    def post(self, request):
+        user = request.user
+        if user.role != Role.PLAYER:
+            return Response(
+                {"detail": "Siz allaqachon organizer yoki host hisoblanasiz."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if OrganizerRequest.objects.filter(user=user, status=OrganizerRequest.Status.PENDING).exists():
+            return Response(
+                {"detail": "So'rovingiz allaqachon ko'rib chiqilmoqda."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = OrganizerRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        req = serializer.save(user=user)
+        return Response(OrganizerRequestSerializer(req).data, status=status.HTTP_201_CREATED)
 
 
 class AvatarUploadView(APIView):

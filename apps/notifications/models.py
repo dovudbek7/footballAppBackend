@@ -19,6 +19,8 @@ class NotificationLog(TimeStampedModel):
         FRIEND_REQUEST = "friend_request", "Friend request"
         FRIEND_ACCEPTED = "friend_accepted", "Friend request accepted"
         MATCH_INVITE = "match_invite", "Match invite"
+        ORGANIZER_REQUEST_APPROVED = "organizer_request_approved", "Organizer request approved"
+        ORGANIZER_REQUEST_REJECTED = "organizer_request_rejected", "Organizer request rejected"
 
     class Status(models.TextChoices):
         SENT = "sent", "Sent"
