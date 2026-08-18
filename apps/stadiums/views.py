@@ -34,6 +34,13 @@ class StadiumListView(generics.ListAPIView):
 
     def get_queryset(self):
         qs = _annotated_stadiums()
+        if self.request.query_params.get("favorites") == "1":
+            user = self.request.user
+            if not user.is_authenticated:
+                return qs.none()
+            qs = qs.filter(
+                id__in=FavoriteStadium.objects.filter(user=user).values_list("stadium_id", flat=True)
+            )
         search = self.request.query_params.get("search")
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(district__icontains=search) | Q(city__icontains=search))

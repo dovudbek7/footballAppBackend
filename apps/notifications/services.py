@@ -35,9 +35,13 @@ _TEMPLATES = {
 }
 
 
-def notify(user, notification_type: str, **context) -> NotificationLog:
+def render_text(notification_type: str, **context) -> str:
     template = _TEMPLATES.get(notification_type, "{message}")
-    text = template.format(**context)
+    return template.format(**context)
+
+
+def notify(user, notification_type: str, **context) -> NotificationLog:
+    text = render_text(notification_type, **context)
 
     if not user.telegram_id:
         return NotificationLog.objects.create(

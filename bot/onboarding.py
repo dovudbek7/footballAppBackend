@@ -130,16 +130,31 @@ async def handle_referral_start(message: Message, state: FSMContext, code: str) 
 
 
 async def _notify_referrer(message: Message, referrer, new_friend) -> None:
-    if not referrer.telegram_id:
-        return
-    try:
-        await message.bot.send_message(
-            referrer.telegram_id,
-            t(referrer.language, "referral_friend_joined", name=new_friend.full_name or "Someone"),
-            parse_mode="HTML",
-        )
-    except Exception:
-        logger.warning("Could not notify referrer %s about new friend request", referrer.id)
+    """Send the Telegram DM and persist a NotificationLog row so it also
+    shows up in the app's Notifications tab — same template the in-app
+    friend-request flow uses, so the two stay consistent."""
+    from apps.notifications.models import NotificationLog
+    from apps.notifications.services import render_text
+
+    requester_name = new_friend.full_name or "Someone"
+    text = render_text(NotificationLog.NotificationType.FRIEND_REQUEST, requester_name=requester_name)
+
+    sent = False
+    if referrer.telegram_id:
+        try:
+            await message.bot.send_message(referrer.telegram_id, text, parse_mode="HTML")
+            sent = True
+        except Exception:
+            logger.warning("Could not notify referrer %s about new friend request", referrer.id)
+
+    await NotificationLog.objects.acreate(
+        user=referrer,
+        telegram_id=referrer.telegram_id,
+        type=NotificationLog.NotificationType.FRIEND_REQUEST,
+        text=text,
+        payload={"requester_name": requester_name},
+        status=NotificationLog.Status.SENT if sent else NotificationLog.Status.FAILED,
+    )
 
 
 @router.callback_query(Onboarding.language, F.data.startswith("lang:"))
