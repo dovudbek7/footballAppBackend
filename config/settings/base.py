@@ -141,3 +141,8 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 # When True, OTP endpoints return the generated code in the response body
 # instead of sending it via Telegram (unblocks frontend work before the bot exists).
 OTP_DEBUG_MODE = config("OTP_DEBUG_MODE", default=True, cast=bool)
+
+# Path to a Firebase service-account JSON file, for push notifications (FCM)
+# to the mobile app. Push is fully additive to the Telegram notification path
+# and silently no-ops until this is set and points at a real, readable file.
+FIREBASE_CREDENTIALS_PATH = config("FIREBASE_CREDENTIALS_PATH", default="")

@@ -38,3 +38,26 @@ class NotificationLog(TimeStampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class DeviceToken(TimeStampedModel):
+    """A push-notification (FCM) registration for a user's mobile device.
+
+    Additive to the Telegram notification path — see apps/notifications/services.py.
+    """
+
+    class Platform(models.TextChoices):
+        IOS = "ios", "iOS"
+        ANDROID = "android", "Android"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="device_tokens")
+    token = models.CharField(max_length=255, unique=True)
+    platform = models.CharField(max_length=16, choices=Platform.choices)
+    device_id = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user_id}:{self.platform}:{self.token[:12]}..."
